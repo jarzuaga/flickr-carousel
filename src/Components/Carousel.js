@@ -1,31 +1,33 @@
 import React, { Component } from 'react';
-import { css } from 'emotion';
+import { css, cx } from 'emotion';
 import debounce from 'lodash.debounce';
 import get from 'lodash.get';
+import isEmpty from 'lodash.isempty';
 import FlickrServices from '../services/flickr-services';
 
-const container = css`
+const flexColumn = css`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+`;
+
+const container = css`
+  ${flexColumn};
   width: 80%;
   margin: 0 auto;
 `;
 
-const carouselContainer = css`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+const spinnerContainer = css`
+  ${flexColumn};
+  height: 566px;
 `;
 
-const spinnerContainer = css`
+const arrowContainer = css`
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 566px;
+  justify-content: space-between;
+  width: 100%;
 `;
 
 const searchField = css`
@@ -54,6 +56,12 @@ const photoItem = css`
   outline: none;
 `;
 
+const arrowStyle = css`
+  cursor: pointer;
+  outline: none;
+`;
+const arrowClasses = cx('large material-icons', arrowStyle);
+
 export default class Carousel extends Component {
   constructor(props) {
     super(props);
@@ -69,6 +77,8 @@ export default class Carousel extends Component {
     this.handleSearchChange = this.handleSearchChange.bind(this);
     this.handleKeyPress = this.handleKeyPress.bind(this);
     this.handlePhotoClick = this.handlePhotoClick.bind(this);
+    this.handleLeftArrowClick = this.handleLeftArrowClick.bind(this);
+    this.handleRightArrowClick = this.handleRightArrowClick.bind(this);
     this.debouncedSearchPhotos = debounce(this.searchPhotos, 750, { trailing: true });
   }
 
@@ -92,6 +102,27 @@ export default class Carousel extends Component {
 
   handlePhotoClick(e) {
     this.setState({ selectedPhoto: Number(e.target.dataset.index) });
+  }
+
+  handleLeftArrowClick() {
+    if (this.state.selectedPhoto === 0) {
+      return this.setState((prevState) => {
+        const photos = Object.values(prevState.photos);
+        return { selectedPhoto: photos.length - 1 };
+      });
+    }
+
+    this.setState(prevState => ({ selectedPhoto: prevState.selectedPhoto - 1 }));
+  }
+
+  handleRightArrowClick() {
+    const photos = Object.values(this.state.photos);
+
+    if (this.state.selectedPhoto === photos.length - 1) {
+      return this.setState({ selectedPhoto: 0 });
+    }
+
+    this.setState(prevState => ({ selectedPhoto: prevState.selectedPhoto + 1 }));
   }
 
   async searchPhotos(searchTerm) {
@@ -179,6 +210,7 @@ export default class Carousel extends Component {
 
     return (
       <button
+        key={photo.index}
         type="button"
         data-index={photo.index}
         onClick={this.handlePhotoClick}
@@ -204,9 +236,31 @@ export default class Carousel extends Component {
     );
   }
 
+  renderNavArrows() {
+    return (
+      <div className={arrowContainer}>
+        <i
+          role="button"
+          tabIndex={0}
+          onClick={this.handleLeftArrowClick}
+          className={arrowClasses}>
+          keyboard_arrow_left
+        </i>
+        <i
+          role="button"
+          tabIndex={0}
+          onClick={this.handleRightArrowClick}
+          className={arrowClasses}>
+          keyboard_arrow_right
+        </i>
+      </div>
+    );
+  }
+
   renderMainPhoto() {
     const selectedPhoto = this.state.photos[this.state.selectedPhoto] || {};
     const mainPhoto = css`
+      ${flexColumn};
       ${photoItem};
       width: 90%;
       height: 350px;
@@ -215,13 +269,19 @@ export default class Carousel extends Component {
     `;
 
     return (
-      <div className={mainPhoto} />
+      <div className={mainPhoto}>
+        {this.renderNavArrows()}
+      </div>
     );
   }
 
   renderCarousel() {
+    if (isEmpty(this.state.photos)) {
+      return null;
+    }
+
     return (
-      <div className={carouselContainer}>
+      <div className={flexColumn}>
         {this.renderMainPhoto()}
         {this.renderTrack()}
       </div>

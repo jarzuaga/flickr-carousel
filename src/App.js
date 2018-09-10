@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import './App.css';
-import FlickrServices from './services/flickr-services';
 import Carousel from './Components/Carousel';
 
 class App extends Component {

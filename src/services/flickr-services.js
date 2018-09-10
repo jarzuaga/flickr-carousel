@@ -7,7 +7,6 @@ const flickr = new Flickr(apiKey);
 
 const flickrServices = {
   searchPhotos: (searchTerm) => {
-    console.log('calling search service with: ', searchTerm);
     const options = {
       text: searchTerm,
       per_page: 15, // Only want to show the first 15 photos in the carousel for this demo
