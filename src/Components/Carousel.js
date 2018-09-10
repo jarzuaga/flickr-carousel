@@ -69,7 +69,7 @@ export default class Carousel extends Component {
     this.state = {
       searchingPhotos: false,
       searchTerm: '',
-      photos: [],
+      photos: {},
       selectedPhoto: null,
       keyPressed: null,
     };
