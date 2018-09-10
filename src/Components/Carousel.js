@@ -13,6 +13,21 @@ const container = css`
   margin: 0 auto;
 `;
 
+const carouselContainer = css`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+
+const spinnerContainer = css`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 566px;
+`;
+
 const searchField = css`
   width: 20rem;
 `;
@@ -46,11 +61,9 @@ export default class Carousel extends Component {
     this.state = {
       searchingPhotos: false,
       searchTerm: '',
-      carousel: {},
-      carouselLength: 0,
+      photos: [],
       selectedPhoto: null,
       keyPressed: null,
-      reset: false,
     };
 
     this.handleSearchChange = this.handleSearchChange.bind(this);
@@ -64,12 +77,12 @@ export default class Carousel extends Component {
     const parsedSearchTerm = searchTerm.trim();
     const pressedKeyIsBackspace = this.state.keyPressed === 'Backspace';
 
-    this.setState({ searchTerm }, async () => {
+    this.setState({ searchTerm }, () => {
       if (!parsedSearchTerm || parsedSearchTerm.length < 2 || pressedKeyIsBackspace) {
         return;
       }
 
-      await this.debouncedSearchPhotos(parsedSearchTerm);
+      this.debouncedSearchPhotos(parsedSearchTerm);
     });
   }
 
@@ -107,68 +120,37 @@ export default class Carousel extends Component {
     }
   }
 
-  buildCarouselData(photos) {
-    const [_, ...allButFirst] = photos;
-    const allButLast = photos.slice(0, photos.length - 1);
-    let trackPosition = 24;
+  buildCarouselData(results) {
+    let trackPosition = 24; // Positions first picture in the middle of the track.
 
-    const firstSection = allButFirst.map((src, index) => {
-      const photo = {
+    const photos = results.reduce((acc, src, index) => {
+      acc[index] = {
         src,
-        index: (allButFirst.length - index) * -1,
         trackPosition,
-      };
-
-      trackPosition -= 16;
-
-      return photo;
-    });
-
-    const secondSection = photos.map((src, index) => {
-      const photo = {
-        src,
         index,
-        trackPosition,
       };
-
       trackPosition -= 16;
-
-      return photo;
-    });
-
-    const thirdSection = allButLast.map((src, index) => {
-      const photo = {
-        src,
-        index: photos.length + index,
-        trackPosition,
-      };
-
-      trackPosition -= 16;
-
-      return photo;
-    });
-
-    const carousel = [...firstSection, ...secondSection, ...thirdSection].reduce((acc, photo) => {
-      acc[photo.index] = photo;
 
       return acc;
     }, {});
 
-    this.setState({ carousel, searchingPhotos: false, selectedPhoto: 0, carouselLength: photos.length });
+    this.setState({ photos, searchingPhotos: false, selectedPhoto: 0 });
   }
 
   renderSpinner() {
     return (
-      <div className="preloader-wrapper small active">
-        <div className="spinner-layer spinner-blue-only">
-          <div className="circle-clipper left">
-            <div className="circle" />
-          </div>
-          <div className="gap-patch">
-            <div className="circle" />
-          </div>
-          <div className="circle-clipper right">
-            <div className="circle" />
+      <div className={spinnerContainer}>
+        <div className="preloader-wrapper small active">
+          <div className="spinner-layer spinner-blue-only">
+            <div className="circle-clipper left">
+              <div className="circle" />
+            </div>
+            <div className="gap-patch">
+              <div className="circle" />
+            </div>
+            <div className="circle-clipper right">
+              <div className="circle" />
+            </div>
           </div>
         </div>
       </div>
@@ -191,34 +173,57 @@ export default class Carousel extends Component {
   renderPhotoItem(photo) {
     const photoClass = css`
       ${photoItem};
+      background-image: url('${photo.src}');
       border: ${this.state.selectedPhoto === photo.index ? '2px solid orange' : 'none'};
     `;
 
     return (
-      <div
+      <button
         type="button"
         data-index={photo.index}
         onClick={this.handlePhotoClick}
         className={photoClass}
-      >
-        {photo.index}
-      </div>
+      />
     );
   }
 
   renderTrack() {
-    const selectedPhoto = this.state.carousel[this.state.selectedPhoto] || {};
+    const selectedPhoto = this.state.photos[this.state.selectedPhoto] || {};
     const innerTrackClasses = css`
       ${innerTrack};
       transform: translateX(${selectedPhoto.trackPosition}rem);
     `;
-    const orderedCarousel = Object.values(this.state.carousel).sort((a, b) => a.index - b.index);
+    const photos = Object.values(this.state.photos);
 
     return (
       <div className={trackContainer}>
         <div className={innerTrackClasses}>
-          {orderedCarousel.map(photo => this.renderPhotoItem(photo))}
+          {photos.map(photo => this.renderPhotoItem(photo))}
         </div>
+      </div>
+    );
+  }
+
+  renderMainPhoto() {
+    const selectedPhoto = this.state.photos[this.state.selectedPhoto] || {};
+    const mainPhoto = css`
+      ${photoItem};
+      width: 90%;
+      height: 350px;
+      margin: 0;
+      background-image: url('${selectedPhoto.src}');
+    `;
+
+    return (
+      <div className={mainPhoto} />
+    );
+  }
+
+  renderCarousel() {
+    return (
+      <div className={carouselContainer}>
+        {this.renderMainPhoto()}
+        {this.renderTrack()}
       </div>
     );
   }
@@ -231,7 +236,7 @@ export default class Carousel extends Component {
         {
           this.state.searchingPhotos ?
             this.renderSpinner() :
-            this.renderTrack()
+            this.renderCarousel()
         }
       </div>
     );
